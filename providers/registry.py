@@ -324,8 +324,22 @@ class ProviderRegistry:
 
     def cached_prefixed_model_infos(self) -> tuple[ProviderModelInfo, ...]:
         """Return cached provider models with user-selectable prefixed ids."""
+        return self._prefixed_model_infos(SUPPORTED_PROVIDER_IDS)
+
+    def configured_prefixed_model_infos(
+        self, provider_ids: frozenset[str]
+    ) -> tuple[ProviderModelInfo, ...]:
+        """Return cached models only from the given *provider_ids*."""
+        return self._prefixed_model_infos(provider_ids)
+
+    def _prefixed_model_infos(
+        self, provider_ids: tuple[str, ...] | frozenset[str]
+    ) -> tuple[ProviderModelInfo, ...]:
+        """Return cached provider models filtered to *provider_ids*."""
         infos: list[ProviderModelInfo] = []
         for provider_id in SUPPORTED_PROVIDER_IDS:
+            if provider_id not in provider_ids:
+                continue
             provider_infos = self._model_infos_by_provider.get(provider_id, {})
             infos.extend(
                 ProviderModelInfo(

@@ -12,6 +12,11 @@ def _settings(
     model: str = "deepseek/deepseek-chat",
     model_opus: str | None = "open_router/anthropic/claude-opus",
     model_haiku: str | None = "deepseek/deepseek-chat",
+    deepseek_api_key: str = "",
+    open_router_api_key: str = "",
+    wafer_api_key: str = "",
+    custom_openai_api_key: str = "",
+    nvidia_nim_api_key: str = "",
 ) -> Settings:
     return Settings.model_construct(
         model=model,
@@ -19,12 +24,17 @@ def _settings(
         model_sonnet=None,
         model_haiku=model_haiku,
         anthropic_auth_token="",
+        deepseek_api_key=deepseek_api_key,
+        open_router_api_key=open_router_api_key,
+        wafer_api_key=wafer_api_key,
+        custom_openai_api_key=custom_openai_api_key,
+        nvidia_nim_api_key=nvidia_nim_api_key,
     )
 
 
 def test_models_list_includes_configured_refs_cached_provider_models_and_aliases():
     app = create_app(lifespan_enabled=False)
-    settings = _settings()
+    settings = _settings(deepseek_api_key="ds-key", open_router_api_key="or-key")
     registry = ProviderRegistry()
     registry.cache_model_ids("deepseek", {"deepseek-chat"})
     registry.cache_model_ids("open_router", {"meta/llama-3.3", "anthropic/claude-opus"})
@@ -71,7 +81,11 @@ def test_models_list_includes_configured_refs_cached_provider_models_and_aliases
 
 def test_models_list_uses_openrouter_thinking_metadata_for_cached_models():
     app = create_app(lifespan_enabled=False)
-    settings = _settings(model_opus=None)
+    settings = _settings(
+        model_opus="open_router/reasoning-model",
+        deepseek_api_key="ds-key",
+        open_router_api_key="or-key",
+    )
     registry = ProviderRegistry()
     registry.cache_model_ids("deepseek", {"deepseek-chat"})
     registry.cache_model_infos(
@@ -103,6 +117,7 @@ def test_models_list_uses_cached_metadata_for_configured_openrouter_refs():
         model="open_router/plain-model",
         model_opus=None,
         model_haiku=None,
+        open_router_api_key="or-key",
     )
     registry = ProviderRegistry()
     registry.cache_model_infos(
@@ -129,6 +144,7 @@ def test_models_list_includes_cached_wafer_models():
         model="wafer/DeepSeek-V4-Pro",
         model_opus=None,
         model_haiku=None,
+        wafer_api_key="wafer-key",
     )
     registry = ProviderRegistry()
     registry.cache_model_ids("wafer", {"DeepSeek-V4-Pro", "MiniMax-M2.7"})
@@ -154,6 +170,7 @@ def test_models_list_advertises_configured_custom_openai_ref():
         model="custom_openai/gpt-4o",
         model_opus=None,
         model_haiku=None,
+        custom_openai_api_key="custom-key",
     )
     app.dependency_overrides[get_settings] = lambda: settings
 
@@ -189,3 +206,35 @@ def test_models_list_works_without_provider_registry():
         "claude-3-freecc-no-thinking/open_router/anthropic/claude-opus",
     ]
     assert "claude-sonnet-4-20250514" in ids
+
+
+def test_models_list_excludes_models_from_unreferenced_providers():
+    """Models from providers with credentials but NOT referenced in MODEL are excluded."""
+    app = create_app(lifespan_enabled=False)
+    settings = _settings(
+        model="custom_openai/gpt-4o",
+        model_opus=None,
+        model_haiku=None,
+        custom_openai_api_key="custom-key",
+        # OpenRouter has a valid key but is NOT used in any MODEL setting
+        open_router_api_key="or-key",
+    )
+    registry = ProviderRegistry()
+    registry.cache_model_ids("custom_openai", {"gpt-4o"})
+    # OpenRouter models are cached (discovered via credential) but not referenced
+    registry.cache_model_ids("open_router", {"meta/llama-3.3", "google/gemma-3"})
+    app.state.provider_registry = registry
+    app.dependency_overrides[get_settings] = lambda: settings
+
+    try:
+        response = TestClient(app).get("/v1/models")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    ids = [item["id"] for item in response.json()["data"]]
+    # custom_openai models should appear (referenced in MODEL)
+    assert "anthropic/custom_openai/gpt-4o" in ids
+    # OpenRouter models must NOT appear (has credential but not in MODEL config)
+    assert "anthropic/open_router/meta/llama-3.3" not in ids
+    assert "anthropic/open_router/google/gemma-3" not in ids

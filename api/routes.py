@@ -127,7 +127,8 @@ def _build_models_list_response(
     models: list[ModelResponse] = []
     seen: set[str] = set()
 
-    for ref in settings.configured_chat_model_refs():
+    refs = settings.configured_chat_model_refs()
+    for ref in refs:
         supports_thinking = None
         if provider_registry is not None:
             supports_thinking = provider_registry.cached_model_supports_thinking(
@@ -141,7 +142,10 @@ def _build_models_list_response(
         )
 
     if provider_registry is not None:
-        for model_info in provider_registry.cached_prefixed_model_infos():
+        referenced_ids = frozenset(ref.provider_id for ref in refs)
+        for model_info in provider_registry.configured_prefixed_model_infos(
+            referenced_ids
+        ):
             _append_provider_model_variants(
                 models,
                 seen,
