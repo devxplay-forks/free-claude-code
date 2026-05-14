@@ -70,6 +70,7 @@ function providerName(providerId) {
     opencode: "OpenCode Zen",
     opencode_go: "OpenCode Go",
     zai: "Z.ai",
+    custom_openai: "Custom OpenAI",
   };
   if (names[providerId]) return names[providerId];
   return providerId

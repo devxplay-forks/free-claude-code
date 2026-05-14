@@ -148,6 +148,28 @@ def test_models_list_includes_cached_wafer_models():
     assert "claude-3-freecc-no-thinking/wafer/MiniMax-M2.7" in ids
 
 
+def test_models_list_advertises_configured_custom_openai_ref():
+    app = create_app(lifespan_enabled=False)
+    settings = _settings(
+        model="custom_openai/gpt-4o",
+        model_opus=None,
+        model_haiku=None,
+    )
+    app.dependency_overrides[get_settings] = lambda: settings
+
+    try:
+        response = TestClient(app).get("/v1/models")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    ids = [item["id"] for item in response.json()["data"]]
+    assert ids[:2] == [
+        "anthropic/custom_openai/gpt-4o",
+        "claude-3-freecc-no-thinking/custom_openai/gpt-4o",
+    ]
+
+
 def test_models_list_works_without_provider_registry():
     app = create_app(lifespan_enabled=False)
     settings = _settings()

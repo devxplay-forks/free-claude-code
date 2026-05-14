@@ -27,6 +27,7 @@ OLLAMA_DEFAULT_BASE = "http://localhost:11434"
 OPENCODE_DEFAULT_BASE = "https://opencode.ai/zen/v1"
 OPENCODE_GO_DEFAULT_BASE = "https://opencode.ai/zen/go/v1"
 ZAI_DEFAULT_BASE = "https://api.z.ai/api/coding/paas/v4"
+CUSTOM_OPENAI_DEFAULT_BASE = "http://localhost:3000/v1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,6 +166,16 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         credential_attr="fireworks_api_key",
         default_base_url=FIREWORKS_DEFAULT_BASE,
         proxy_attr="fireworks_proxy",
+        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
+    ),
+    "custom_openai": ProviderDescriptor(
+        provider_id="custom_openai",
+        transport_type="openai_chat",
+        credential_env="CUSTOM_OPENAI_API_KEY",
+        credential_attr="custom_openai_api_key",
+        default_base_url=CUSTOM_OPENAI_DEFAULT_BASE,
+        base_url_attr="custom_openai_base_url",
+        proxy_attr="custom_openai_proxy",
         capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
     ),
 }

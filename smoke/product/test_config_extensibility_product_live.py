@@ -142,6 +142,7 @@ def test_provider_registry_e2e() -> None:
         open_router_api_key="openrouter-key",
         deepseek_api_key="deepseek-key",
         nvidia_nim_api_key="nim-key",
+        custom_openai_api_key="custom-key",
         lm_studio_base_url="http://localhost:1234/v1",
         llamacpp_base_url="http://localhost:8080/v1",
     )

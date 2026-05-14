@@ -37,7 +37,7 @@ Free Claude Code routes Anthropic Messages API traffic from Claude Code to any p
 ## What You Get
 
 - Drop-in proxy for Claude Code's Anthropic API calls.
-- Eleven provider backends: NVIDIA NIM, Kimi, Wafer, OpenRouter, DeepSeek, LM Studio, llama.cpp, Ollama, OpenCode Zen, OpenCode Go, and Z.ai.
+- Twelve provider backends: NVIDIA NIM, Kimi, Wafer, OpenRouter, DeepSeek, LM Studio, llama.cpp, Ollama, OpenCode Zen, OpenCode Go, Z.ai, and custom OpenAI-compatible endpoints.
 - Per-model routing: send Opus, Sonnet, Haiku, and fallback traffic to different providers.
 - Native Claude Code `/model` picker support through the proxy's `/v1/models` endpoint (Claude Code must opt in to Gateway model discovery; see [Model Picker](#model-picker)).
 - Streaming, tool use, reasoning/thinking block handling, and local request optimizations.
@@ -235,7 +235,13 @@ Popular examples:
 
 Browse models at [Z.ai](https://z.ai).
 
-### 12. Mix Providers By Model Tier
+### 12. Custom OpenAI-Compatible Endpoint
+
+Use `custom_openai` for any OpenAI-compatible `/v1/chat/completions` endpoint without adding a hardcoded provider. Set `CUSTOM_OPENAI_API_KEY`, set `CUSTOM_OPENAI_BASE_URL` to the endpoint base URL such as `http://localhost:3000/v1`, optionally set `CUSTOM_OPENAI_PROXY`, then set `MODEL` to a prefixed model ref such as `custom_openai/gpt-4o`.
+
+`CUSTOM_OPENAI_*` settings are only used when `MODEL`, `MODEL_OPUS`, `MODEL_SONNET`, `MODEL_HAIKU`, or a direct request model uses the `custom_openai/` prefix.
+
+### 13. Mix Providers By Model Tier
 
 Each model tier can use a different provider by setting `MODEL_OPUS`, `MODEL_SONNET`, and `MODEL_HAIKU` in the Admin UI. Leave a tier blank to inherit `MODEL`.
 

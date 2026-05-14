@@ -104,6 +104,12 @@ def _create_fireworks(config: ProviderConfig, _settings: Settings) -> BaseProvid
     return FireworksProvider(config)
 
 
+def _create_custom_openai(config: ProviderConfig, _settings: Settings) -> BaseProvider:
+    from providers.custom_openai import CustomOpenAIProvider
+
+    return CustomOpenAIProvider(config)
+
+
 PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "nvidia_nim": _create_nvidia_nim,
     "open_router": _create_open_router,
@@ -117,6 +123,7 @@ PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "opencode_go": _create_opencode_go,
     "zai": _create_zai,
     "fireworks": _create_fireworks,
+    "custom_openai": _create_custom_openai,
 }
 
 if set(PROVIDER_DESCRIPTORS) != set(SUPPORTED_PROVIDER_IDS) or set(
@@ -239,6 +246,11 @@ def _model_list_provider_ids_for_settings(settings: Settings) -> tuple[str, ...]
     referenced_provider_ids = _referenced_provider_ids(settings)
     provider_ids: list[str] = []
     for provider_id, descriptor in PROVIDER_DESCRIPTORS.items():
+        if (
+            provider_id == "custom_openai"
+            and provider_id not in referenced_provider_ids
+        ):
+            continue
         if descriptor.static_credential is not None:
             if provider_id in referenced_provider_ids:
                 provider_ids.append(provider_id)

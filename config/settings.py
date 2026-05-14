@@ -129,6 +129,15 @@ class Settings(BaseSettings):
     # ==================== Fireworks AI Config ====================
     fireworks_api_key: str = Field(default="", validation_alias="FIREWORKS_API_KEY")
 
+    # ==================== Custom OpenAI-Compatible Config ====================
+    custom_openai_api_key: str = Field(
+        default="", validation_alias="CUSTOM_OPENAI_API_KEY"
+    )
+    custom_openai_base_url: str = Field(
+        default="http://localhost:3000/v1",
+        validation_alias="CUSTOM_OPENAI_BASE_URL",
+    )
+
     # ==================== Messaging Platform Selection ====================
     # Valid: "telegram" | "discord" | "none"
     messaging_platform: str = Field(
@@ -184,6 +193,7 @@ class Settings(BaseSettings):
     opencode_go_proxy: str = Field(default="", validation_alias="OPENCODE_GO_PROXY")
     zai_proxy: str = Field(default="", validation_alias="ZAI_PROXY")
     fireworks_proxy: str = Field(default="", validation_alias="FIREWORKS_PROXY")
+    custom_openai_proxy: str = Field(default="", validation_alias="CUSTOM_OPENAI_PROXY")
 
     # ==================== Provider Rate Limiting ====================
     provider_rate_limit: int = Field(default=40, validation_alias="PROVIDER_RATE_LIMIT")

@@ -124,6 +124,22 @@ def test_model_router_routes_wafer_provider_model_directly(settings):
     assert routed.resolved.provider_model_ref == "wafer/DeepSeek-V4-Pro"
 
 
+def test_model_router_routes_custom_openai_provider_model_directly(settings):
+    routed = ModelRouter(settings).resolve_messages_request(
+        MessagesRequest(
+            model="custom_openai/gpt-4o",
+            max_tokens=100,
+            messages=[Message(role="user", content="hello")],
+        )
+    )
+
+    assert routed.request.model == "gpt-4o"
+    assert routed.resolved.original_model == "custom_openai/gpt-4o"
+    assert routed.resolved.provider_id == "custom_openai"
+    assert routed.resolved.provider_model == "gpt-4o"
+    assert routed.resolved.provider_model_ref == "custom_openai/gpt-4o"
+
+
 def test_model_router_routes_gateway_encoded_provider_model_directly(settings):
     routed = ModelRouter(settings).resolve_messages_request(
         MessagesRequest(

@@ -7,8 +7,9 @@ import pytest
 from config.nim import NimSettings
 from config.provider_catalog import PROVIDER_CATALOG, ZAI_DEFAULT_BASE
 from config.provider_ids import SUPPORTED_PROVIDER_IDS
+from providers.custom_openai import CustomOpenAIProvider
 from providers.deepseek import DeepSeekProvider
-from providers.exceptions import UnknownProviderTypeError
+from providers.exceptions import AuthenticationError, UnknownProviderTypeError
 from providers.llamacpp import LlamaCppProvider
 from providers.lmstudio import LMStudioProvider
 from providers.nvidia_nim import NvidiaNimProvider
@@ -35,6 +36,8 @@ def _make_settings(**overrides):
     mock.wafer_api_key = "test_wafer_key"
     mock.opencode_api_key = "test_opencode_key"
     mock.zai_api_key = "test_zai_key"
+    mock.custom_openai_api_key = "test_custom_openai_key"
+    mock.custom_openai_base_url = "http://localhost:3000/v1"
     mock.lm_studio_base_url = "http://localhost:1234/v1"
     mock.llamacpp_base_url = "http://localhost:8080/v1"
     mock.ollama_base_url = "http://localhost:11434"
@@ -47,6 +50,7 @@ def _make_settings(**overrides):
     mock.opencode_proxy = ""
     mock.opencode_go_proxy = ""
     mock.zai_proxy = ""
+    mock.custom_openai_proxy = ""
     mock.provider_rate_limit = 40
     mock.provider_rate_window = 60
     mock.provider_max_concurrency = 5
@@ -155,6 +159,7 @@ def test_create_provider_instantiates_each_builtin():
         "opencode": OpenCodeProvider,
         "opencode_go": OpenCodeProvider,
         "zai": ZaiProvider,
+        "custom_openai": CustomOpenAIProvider,
     }
 
     with (
@@ -179,6 +184,30 @@ def test_provider_registry_caches_by_provider_id():
 def test_unknown_provider_raises_unknown_provider_type_error():
     with pytest.raises(UnknownProviderTypeError, match="Unknown provider_type"):
         create_provider("unknown", _make_settings())
+
+
+def test_create_custom_openai_provider_requires_api_key():
+    with pytest.raises(AuthenticationError, match="CUSTOM_OPENAI_API_KEY is not set"):
+        create_provider("custom_openai", _make_settings(custom_openai_api_key=""))
+
+
+def test_create_custom_openai_provider_uses_base_url_and_proxy():
+    settings = _make_settings(
+        custom_openai_base_url="http://example.test/v1",
+        custom_openai_proxy="http://proxy.example:8080",
+    )
+
+    with (
+        patch("providers.openai_compat.AsyncOpenAI") as openai_client,
+        patch("httpx.AsyncClient") as http_client,
+    ):
+        provider = create_provider("custom_openai", settings)
+
+    assert isinstance(provider, CustomOpenAIProvider)
+    assert provider._base_url == "http://example.test/v1"
+    http_client.assert_called_once()
+    assert http_client.call_args.kwargs["proxy"] == "http://proxy.example:8080"
+    assert openai_client.call_args.kwargs["base_url"] == "http://example.test/v1"
 
 
 @pytest.mark.asyncio

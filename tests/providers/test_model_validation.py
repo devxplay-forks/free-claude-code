@@ -35,6 +35,7 @@ def _settings(
     wafer_api_key: str = "",
     opencode_api_key: str = "",
     zai_api_key: str = "",
+    custom_openai_api_key: str = "",
 ) -> Settings:
     return Settings.model_construct(
         model=model,
@@ -47,6 +48,7 @@ def _settings(
         wafer_api_key=wafer_api_key,
         opencode_api_key=opencode_api_key,
         zai_api_key=zai_api_key,
+        custom_openai_api_key=custom_openai_api_key,
         log_api_error_tracebacks=False,
     )
 
@@ -455,6 +457,29 @@ async def test_registry_refresh_model_list_cache_uses_configured_remote_keys_and
     assert registry.cached_model_ids() == {
         "open_router": frozenset({"anthropic/claude-sonnet"}),
         "lmstudio": frozenset({"local-qwen"}),
+    }
+
+
+@pytest.mark.asyncio
+async def test_registry_refresh_model_list_cache_ignores_unreferenced_custom_openai_key() -> (
+    None
+):
+    registry = ProviderRegistry(
+        {
+            "open_router": FakeProvider(frozenset({"anthropic/claude-sonnet"})),
+            "custom_openai": FakeProvider(frozenset({"gpt-4o"})),
+        }
+    )
+    settings = _settings(
+        model="open_router/anthropic/claude-sonnet",
+        open_router_api_key="open-router-key",
+        custom_openai_api_key="custom-key",
+    )
+
+    await registry.refresh_model_list_cache(settings)
+
+    assert registry.cached_model_ids() == {
+        "open_router": frozenset({"anthropic/claude-sonnet"})
     }
 
 
